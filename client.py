@@ -27,7 +27,6 @@ except Exception as ex:
     print(f"Connection error server: {ex}")
     exit(1)
 
-
 def receive_messages(page, message_list):
     while True:
         try:

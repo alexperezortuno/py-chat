@@ -22,12 +22,18 @@ if __name__ == "__main__":
         parser.add_argument("-s", "--server", type=bool, default=False)
         parser.add_argument("-u", "--user-interface", type=bool, default=False)
         parser.add_argument("-n", "--name", type=str, default="user")
-        parser.add_argument("-p", "--port", type=int, default="port")
+        parser.add_argument("--server-host", type=str)
+        parser.add_argument("--server-port", type=int)
+        parser.add_argument("--client-host", type=str)
+        parser.add_argument("--client-port", type=int)
         params: Dict = vars(parser.parse_args())
         chat = Chat()
 
         if params['client']:
             logger.debug("Client mode")
+            if params['name'] == "user":
+                logger.error("Please provide a name")
+                sys.exit(1)
             chat.run_client(params)
         elif params['server']:
             logger.debug("Host mode")

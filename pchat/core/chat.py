@@ -7,7 +7,8 @@ import flet as ft
 
 from flet_core import ScrollMode, FontWeight
 from screeninfo import get_monitors, Monitor
-from pchat.core.commons import log_lvl, log_str, host, port, public_key, private_key
+from pchat.core.commons import log_lvl, log_str, server_host, server_port, client_host, client_port, public_key, \
+    private_key
 from pchat.core.logger import get_logger
 
 logger = get_logger(log_lvl, log_str, __name__)
@@ -16,6 +17,7 @@ title: str = "Chat Network"
 monitor: Monitor = get_monitors()[0]
 screen_height: int = monitor.height
 calculated_height: int = int(screen_height * 0.5)
+
 
 class Chat:
     public_partner = None
@@ -26,19 +28,24 @@ class Chat:
         try:
             logger.debug("Chat run")
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect((host, port))
+            h: int = self.global_params['server_host'] if self.global_params['server_host'] else server_host
+            p: int = self.global_params['server_port'] if self.global_params['server_port'] else server_port
+            client.connect((h, p))
             self.public_partner = rsa.PublicKey.load_pkcs1(client.recv(1024))
             client.send(public_key.save_pkcs1("PEM"))
             self.establish_connection = True
+            self.global_params['client'] = client
             return client
         except Exception as ex:
             logger.error(f"Error to connect with server: {ex}")
             return None
 
-    def host(self) -> socket.socket:
+    def host(self, params: dict) -> socket.socket:
         logger.debug("Chat run")
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind((host, port))
+        h: int = params['server_host'] if params['server_host'] else server_host
+        p: int = params['server_port'] if params['server_port'] else server_port
+        server.bind((h, p))
         logger.debug("Waiting for connection")
         server.listen(3)
         c, address = server.accept()
@@ -59,7 +66,7 @@ class Chat:
     def send_message(self, input_txt: ft.TextField, msg_list: ft.Column, p: ft.Page):
         message = input_txt.value
         try:
-            ctx = self.client()
+            ctx = self.global_params['client']
             if not ctx:
                 return
             name: str = "" if self.global_params['name'] == "user" else self.global_params['name']
@@ -85,13 +92,14 @@ class Chat:
         threading.Thread(target=self.receiving_messages, args=(c, params)).start()
 
     def run_host(self, params) -> None:
-        h = self.host()
+        h = self.host(params)
         threading.Thread(target=self.sending_messages, args=(h, params)).start()
         threading.Thread(target=self.receiving_messages, args=(h, params)).start()
 
     def user_interface(self, page: ft.Page) -> None:
         page.title = title
         page.scroll = "auto"
+        self.run_client(self.global_params)
 
         if self.establish_connection:
             message_list = ft.Column(scroll=ScrollMode.AUTO, expand=True)
@@ -133,10 +141,11 @@ class Chat:
                     )
                 ], alignment=ft.MainAxisAlignment.END),
             )
-            #threading.Thread(target=receive_messages, args=(page, message_list), daemon=True).start()
+            # threading.Thread(target=receive_messages, args=(page, message_list), daemon=True).start()
         else:
             page.add(ft.Text("Error to connect with server"))
 
     def run_user_interface(self, params: dict) -> None:
         self.global_params = params
-        ft.app(target=self.user_interface, view=ft.AppView.WEB_BROWSER, port=5001)
+        p: int = params['client_port'] if params['client_port'] else client_port
+        ft.app(target=self.user_interface, view=ft.AppView.WEB_BROWSER, port=p)
