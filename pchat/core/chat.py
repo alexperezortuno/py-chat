@@ -14,9 +14,6 @@ from pchat.core.logger import get_logger
 logger = get_logger(log_lvl, log_str, __name__)
 
 title: str = "Chat Network"
-monitor: Monitor = get_monitors()[0]
-screen_height: int = monitor.height
-calculated_height: int = int(screen_height * 0.5)
 
 
 class Chat:
@@ -102,6 +99,9 @@ class Chat:
         self.run_client(self.global_params)
 
         if self.establish_connection:
+            monitor: Monitor = get_monitors()[0]
+            screen_height: int = monitor.height
+            calculated_height: int = int(screen_height * 0.5)
             message_list = ft.Column(scroll=ScrollMode.AUTO, expand=True)
 
             input_field = ft.TextField(label="Write a message", expand=True)
