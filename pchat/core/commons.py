@@ -4,8 +4,8 @@ import rsa
 
 log_str: str = os.getenv("LOG_FORMAT", f"%(asctime)s | %(name)s | %(lineno)d | %(levelname)s | %(message)s")
 log_lvl: str = os.getenv("LOG_LEVEL", "debug")
-server_host: str = os.getenv("HOST", "localhost")
-server_port: int = int(os.getenv("PORT", 5000))
-client_host: str = os.getenv("HOST", "localhost")
-client_port: int = int(os.getenv("PORT", 5001))
+server_host: str = os.getenv("SERVER_HOST", "localhost")
+server_port: int = int(os.getenv("SERVER_PORT", 5000))
+client_host: str = os.getenv("CLIENT_HOST", "localhost")
+client_port: int = int(os.getenv("CLIENT_PORT", 5001))
 public_key, private_key = rsa.newkeys(1024)
