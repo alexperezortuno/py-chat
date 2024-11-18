@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import argparse
 import sys
-import threading
 from typing import Dict
 
 from pchat.core.chat import Chat
