@@ -1,0 +1,8 @@
+version: '3.7'
+
+services:
+  chat:
+    container_name: pychat_server
+    image: pychat:latest
+    ports:
+      - "5000:5000"
