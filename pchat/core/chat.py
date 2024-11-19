@@ -82,6 +82,7 @@ class Chat:
             print(f"{name}: {rsa.decrypt(ctx.recv(1024), private_key).decode()}")
 
     def run_client(self, params) -> None:
+        self.global_params = params
         c = self.client()
         if not c:
             return
