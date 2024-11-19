@@ -4,5 +4,8 @@ services:
   chat:
     container_name: pychat_server
     image: pychat:latest
+    environment:
+      - SERVER_HOST=${SERVER_HOST}
+      - SERVER_PORT=${SERVER_PORT}
     ports:
-      - "8012:5000"
+      - "8012:8012"
