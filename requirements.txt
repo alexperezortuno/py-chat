@@ -2,3 +2,5 @@ coloredlogs==15.0.1
 rsa==4.7.2
 flet==0.24.1
 screeninfo~=0.8.1
+
+cryptography~=43.0.3

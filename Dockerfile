@@ -28,4 +28,5 @@ COPY . /app
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Comando para ejecutar la aplicación
-CMD ["python", "-m", "pchat", "-s", "true"]
+#CMD ["python", "-m", "pchat", "-s", "true"]
+CMD ["python", "server.py"]

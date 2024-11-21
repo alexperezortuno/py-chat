@@ -4,7 +4,6 @@ import argparse
 import sys
 from typing import Dict
 
-from pchat.core.chat import Chat
 from pchat.core.commons import log_lvl, log_str
 from pchat.core.logger import get_logger
 
@@ -18,29 +17,30 @@ if __name__ == "__main__":
         subparser = parser.add_subparsers(title='Script select', dest='script_type')
         parser.version = '1.0.0'
         parser.add_argument("-v", "--version", action="version")
-        parser.add_argument("-c", "--client", type=bool, default=False)
-        parser.add_argument("-s", "--server", type=bool, default=False)
-        parser.add_argument("-u", "--user-interface", type=bool, default=False)
-        parser.add_argument("-n", "--name", type=str, default="user")
+        parser.add_argument("-c", "--client", action="store_true")
+        parser.add_argument("-s", "--server", action="store_true")
+        parser.add_argument("-i", "--interface", action="store_true")
+        parser.add_argument("-u", "--user-name", type=str, default="pc1")
+        parser.add_argument("-r", "--recipient", type=str, default="pc2")
         parser.add_argument("--server-host", type=str)
         parser.add_argument("--server-port", type=int)
         parser.add_argument("--client-host", type=str)
         parser.add_argument("--client-port", type=int)
         params: Dict = vars(parser.parse_args())
-        chat = Chat()
 
         if params['client']:
             logger.debug("Client mode")
-            if params['name'] == "user":
-                logger.error("Please provide a name")
+            if params['user_name'] == "user":
+                logger.error("Please provide a user name")
                 sys.exit(1)
-            chat.run_client(params)
-        elif params['server']:
+
+        if params['server']:
             logger.debug("Host mode")
-            chat.run_host(params)
-        elif params['user_interface']:
+            run_server(params)
+
+        if params['interface']:
             logger.debug("User interface mode")
-            chat.run_user_interface(params)
+            run_client(params)
         else:
             logger.debug("No mode selected")
 
