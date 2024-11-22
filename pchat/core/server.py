@@ -1,11 +1,8 @@
 import json
 import socket
 import threading
-from typing import List
+from typing import Any
 
-from click import command
-
-from pchat.core.cliente import client_socket
 from pchat.core.commons import log_lvl, log_str
 from pchat.core.logger import get_logger
 from pchat.core.utils import messages_income
@@ -15,7 +12,8 @@ HOST = '0.0.0.0'
 PORT = 5000
 
 # Logger
-logger = get_logger(log_lvl, log_str, __name__)
+logger: Any = get_logger(log_lvl, log_str, __name__)
+tag: str = "[SERVER]"
 
 # Almacena {username: (client_socket, channel, public_key)}
 clients = {}
@@ -23,26 +21,24 @@ clients = {}
 channels = {}
 
 
-def broadcast(msg: bytes) -> None:
+def broadcast(msg: bytes, client_socket: Any) -> None:
     """Enviar mensaje a todos los usuarios en el mismo canal."""
-    data = json.loads(msg.decode('utf-8'))
+    data: Any = json.loads(msg.decode('utf-8'))
     cmd = messages_income(data)
-    cs, _, _ = clients[data['username']]
-
-    if cmd == 'CREATE_CHANNEL' and data['channel'] not in channels:
-        channels[f"{data['channel_name']}_{data['username']}"] = [data['username']]
-        cs.send(json.dumps({"type": "CHANNEL_CREATED", "username": data['username']}).encode('utf-8'))
-    if cmd == 'JOIN' and data['channel'] in channels:
-        channels[data['channel']].append(data['username'])
-        cs.send(json.dumps({"type": "CHANNEL_JOINED", "username": data['username']}).encode('utf-8'))
-    if cmd == 'MESSAGE' and data['channel'] in channels:
+    logger.debug(f"{tag} Broadcast: {cmd}")
+    if cmd == 'CHANNELS':
         username = data['username']
-        channel = data['channel']
-        if channel in channels and username in channels[channel]:
-            for username in channels[channel]:
-                if username == sender_username:
-                    cs.send("message sent".encode())
-                cs.send(msg)
+        if username in clients:
+            c: list = list(channels.keys())
+            clients[username][0].send(json.dumps({'type': "CHANNELS", "list": c}).encode('utf-8'))
+    if cmd == 'CREATE_CHANNEL':
+        username = data['username']
+        channel = data['channel_name']
+        if channel not in channels:
+            channels[channel] = [username]
+            clients[username][0].send(json.dumps({"type": "CHANNEL_CREATED"}).encode('utf-8'))
+        else:
+            client_socket.send(json.dumps({"type": "CHANNEL_ERROR"}).encode('utf-8'))
 
 def remove_client(username):
     """Eliminar cliente del sistema."""
@@ -54,38 +50,35 @@ def remove_client(username):
         del clients[username]
         client_socket.close()
 
+def manage_messages(client_socket):
+    """Recibir mensaje de un cliente."""
+    try:
+        data: Any = json.loads(client_socket.recv(1024).decode('utf-8'))
+        command = messages_income(data)
+        logger.debug(f"{tag} Message: {command}")
+        if command == 'JOIN':
+            userdata = data
+            username = userdata['username']
+            clients[username] = (client_socket, [], None)
+            client_socket.send(json.dumps({"type": "JOIN_SUCCESS", "username": username}).encode('utf-8'))
+    except Exception as ex:
+        logger.error(f"{tag} Error manage message: {ex}")
 
 def handle_client(client_socket):
     """Manejar la conexión con un cliente."""
     try:
-        command = messages_income(json.loads(client_socket.recv(1024).decode('utf-8')))
-        logger.debug(f"Message: {command}")
-        if command == 'CHANNELS':
-            client_socket.send(json.dumps({'type': command, command: list(channels.keys())}).encode())
-        if command == 'JOIN':
-            userdata = json.loads(client_socket.recv(1024).decode('utf-8'))
-            clients[userdata['username']] = (client_socket, [], None)
-
-        # username = userdata['username']
-        # channel = userdata['channel']
-
-        # if channel not in channels:
-        #     channels[channel] = []
-        # channels[channel].append(username)
-        # clients[username] = (client_socket, channel, None)  # Public key opcional
-        # logger.info(f"Client {username} connected to channel {channel}")
-
+        manage_messages(client_socket)
         while True:
             # Recibir mensaje y retransmitirlo
             income = client_socket.recv(4096)
             if income:
-                broadcast(income)
+                broadcast(income, client_socket)
             else:
                 break
     except Exception as ex:
-        logger.error(f"Error handle client: {ex}")
+        logger.error(f"{tag} Error handle client: {ex}")
     finally:
-        logger.debug("Client disconnected")
+        logger.debug(f"{tag} Client disconnected")
         # remove_client(username)
 
 
